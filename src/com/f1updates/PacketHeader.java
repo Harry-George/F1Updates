@@ -1,6 +1,7 @@
 package com.f1updates;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Optional;
 
 public class PacketHeader {
@@ -72,17 +73,19 @@ public class PacketHeader {
     }
 
     public static Optional<PacketHeader> ParsePacketHeader(ByteBuffer buf) {
+        buf = buf.order(ByteOrder.LITTLE_ENDIAN);
         try {
             int packetFormat = buf.getShort() & 0xFFFF;
-            int gameMajorVersion = buf.getChar() & 0xFF;
-            int gameMinorVersion = buf.getChar() & 0xFF;
-            int packetVersion = buf.getChar() & 0xFF;
-            PacketID packetId = PacketID.values()[buf.getChar()];
+            int gameMajorVersion = buf.get() & 0xFF;
+            int gameMinorVersion = buf.get() & 0xFF;
+            int packetVersion = buf.get() & 0xFF;
+            int packetIdInt = buf.get() & 0xFF;
+            PacketID packetId = PacketID.values()[packetIdInt];
             long sessionUID = buf.getLong();
             float sessionTime = buf.getFloat();
             int frameIdentifier = buf.getInt();
-            int playerCarIndex = buf.getChar() & 0xFF;
-            int secondaryPlayerCarIndex = buf.getChar() & 0xFF;
+            int playerCarIndex = buf.get() & 0xFF;
+            int secondaryPlayerCarIndex = buf.get() & 0xFF;
 
 
             return Optional.of(new PacketHeader(packetFormat,
@@ -96,6 +99,7 @@ public class PacketHeader {
                     playerCarIndex,
                     secondaryPlayerCarIndex));
         } catch (Exception e) {
+            System.out.println("Got exception" + e.getMessage());
             return null;
         }
     }
