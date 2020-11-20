@@ -1,10 +1,11 @@
 package com.f1updates;
-import java.io.IOException;
+import java.io.*;
 import java.net.*;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Optional;
+
 
 public class Main {
 
@@ -18,12 +19,24 @@ public class Main {
                     InetAddress.getLocalHost().getHostAddress(), port);
             DatagramPacket receivePacket = new DatagramPacket(receiveData,
                     receiveData.length);
-
+            InputStream inputStream = new FileInputStream("C:\\Users\\Hobby\\IdeaProjects\\F1Updates\\data\\f1.output");
             while(true)
             {
-                serverSocket.receive(receivePacket);
 
-                Optional<PacketHeader> header = PacketHeader.ParsePacketHeader(ByteBuffer.wrap(receivePacket.getData(), 0, receivePacket.getLength()));
+//                serverSocket.receive(receivePacket);
+
+                byte[] badger = new byte[4];
+                if (inputStream.read(badger,0,4) == 0) {
+                    return;
+                }
+                int len = ByteBuffer.wrap(badger).getInt();
+                if (len == 0) {
+                    return;
+                }
+                receiveData = new byte[len];
+                System.out.println("Read bytes:" + len);
+                inputStream.read(receiveData,0,len);
+                 Optional<PacketHeader> header = PacketHeader.ParsePacketHeader(ByteBuffer.wrap(receiveData, 0, len));
                 if (header == null) {
                     System.out.println("Failed to parse");
                 } else {
