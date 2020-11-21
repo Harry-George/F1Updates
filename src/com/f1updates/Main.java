@@ -80,11 +80,37 @@ public class Main {
                 rowsRead += 1;
                 ByteBuffer buffer = reader.Get();
                 Optional<PacketHeader> header = PacketHeader.ParsePacketHeader(buffer);
-                if (header == null) {
+                if (!header.isPresent()) {
                     System.out.println("Failed to parse");
                     continue;
-                } else {
-                    System.out.println(header.get().packetId.toString());
+                }
+                System.out.println(header.get().packetId.toString());
+                switch (header.get().packetId) {
+
+                    case Motion:
+                        new Motion().GetSize();
+                        break;
+                    case Session:
+                        break;
+                    case LapData:
+                        break;
+                    case Event:
+                        break;
+                    case Participants:
+                        Optional<Participants> participants = Participants.Parse(buffer);
+                        System.out.println(participants);
+
+                        break;
+                    case CarSetups:
+                        break;
+                    case CarTelemetry:
+                        break;
+                    case CarStatus:
+                        break;
+                    case FinalClassifciation:
+                        break;
+                    case LobbyInfo:
+                        break;
                 }
             }
         } catch (IOException e) {
