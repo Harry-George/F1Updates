@@ -89,7 +89,7 @@ public class Main {
         int port = args.length == 0 ? 20777 : Integer.parseInt(args[0]);
         // TODO - arg parsing
         // If true read from file, false read from packets
-        boolean readFromFile = true;
+        boolean readFromFile = false;
         // if true (and reading from file) play back packets as if simulating the session, otherwise play as fast as
         // you can
         boolean playFileInRealTime = false;
@@ -99,6 +99,7 @@ public class Main {
 
         Vector<Integer> indexesWeCareAbout = new Vector<>();
         SessionData latestSessionData = null;
+        CarsLapData latestCarsLapData = null;
 
         IReader reader;
 
@@ -133,6 +134,10 @@ public class Main {
                         }
                         break;
                     case LapData:
+                        Optional<CarsLapData> carsLapData = CarsLapData.Parse(buffer);
+                        if (carsLapData.isPresent()) {
+                            latestCarsLapData = carsLapData.get();
+                        }
                         break;
                     case Event:
                         break;
@@ -160,8 +165,11 @@ public class Main {
                         Optional<CarStatuses> carStatuses = CarStatuses.Parse(buffer);
                         if (carStatuses.isPresent()) {
                             for (Integer index : indexesWeCareAbout) {
-                                if (null != latestSessionData) {
-                                    System.out.println(Arrays.toString(carStatuses.get().estimateLapsLeft(index, 0, latestSessionData.m_trackLength)));
+                                if (null != latestSessionData && null != latestCarsLapData) {
+                                    System.out.println(Arrays.toString(
+                                            carStatuses.get().estimateLapsLeft(index,
+                                                    (int) latestCarsLapData.carsLapData.get(index).m_lapDistance,
+                                                    latestSessionData.m_trackLength)));
                                 }
                             }
                         }

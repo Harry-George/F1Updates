@@ -287,12 +287,18 @@ public class CarStatuses {
     public int[] estimateLapsLeft(int index, int distanceInCurLap, int trackLength) {
         CarStatus status = carStatuses.get(index);
         int[] estimations = new int[4];
+
+        int distanceTraveled = distanceInCurLap + (status.m_tyresAgeLaps * trackLength);
         for (int i = 0; i < 4; ++i) {
-            if (0 == status.m_tyresAgeLaps || 0 == status.m_tyresWear[i]) {
+
+            if (0 == status.m_tyresWear[i]) {
                 estimations[i] = 999;
                 continue;
             }
-            estimations[i] = ((status.m_tyresAgeLaps * 100) / status.m_tyresWear[i]) - status.m_tyresAgeLaps;
+            int estimatedTotalDistance = (distanceTraveled * 100) / status.m_tyresWear[i];
+            int estimatedTotalLaps = estimatedTotalDistance / trackLength;
+
+            estimations[i] = estimatedTotalLaps - status.m_tyresAgeLaps;
         }
         return estimations;
     }
