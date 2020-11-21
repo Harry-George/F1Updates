@@ -92,7 +92,7 @@ public class Main {
         boolean readFromFile = true;
         // if true (and reading from file) play back packets as if simulating the session, otherwise play as fast as
         // you can
-        boolean playFileInRealTime = true;
+        boolean playFileInRealTime = false;
 
         IReader reader;
 
@@ -135,6 +135,8 @@ public class Main {
                     case CarTelemetry:
                         break;
                     case CarStatus:
+                        Optional<CarStatuses> carStatuses = CarStatuses.Parse(buffer);
+                        System.out.println(carStatuses.get().carStatuses.elementAt(19));
                         break;
                     case FinalClassifciation:
                         break;
