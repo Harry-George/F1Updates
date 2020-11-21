@@ -4,7 +4,9 @@ import java.io.*;
 import java.net.*;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 
 interface IReader {
@@ -12,19 +14,40 @@ interface IReader {
 }
 
 class FileReader implements IReader {
-    public FileReader() throws Exception {
+    public FileReader(boolean wait) throws Exception {
         this.inputStream_ = new FileInputStream("C:\\Users\\Hobby\\IdeaProjects\\F1Updates\\data\\f1.output");
+        this.wait_ = wait;
     }
 
     public ByteBuffer Get() throws Exception {
-        byte[] badger = new byte[4];
-        if (0 == inputStream_.read(badger, 0, 4)) {
+        byte[] length_buffer = new byte[4];
+        if (0 == inputStream_.read(length_buffer, 0, 4)) {
             // todo - this better
             throw new Exception("Finished");
         }
-        int len = ByteBuffer.wrap(badger).getInt();
+        int len = ByteBuffer.wrap(length_buffer).getInt();
         if (len == 0) {
             throw new Exception("Finished 2");
+        }
+
+        byte[] timestamp_buffer = new byte[8];
+        if (0 == inputStream_.read(timestamp_buffer, 0, 8)) {
+            // todo - this better
+            throw new Exception("Error getting time");
+        }
+        long timestamp = ByteBuffer.wrap(timestamp_buffer).getLong();
+        if (timestamp == 0) {
+            throw new Exception("Error getting time 2");
+        }
+
+        if (0 == timestampDelta_) {
+            timestampDelta_ = System.nanoTime() - timestamp;
+        }
+
+        if (this.wait_) {
+            while (timestampDelta_ + timestamp > System.nanoTime()) {
+                TimeUnit.MILLISECONDS.sleep(1);
+            }
         }
 
         receiveData_ = new byte[len];
@@ -34,8 +57,10 @@ class FileReader implements IReader {
         return ByteBuffer.wrap(receiveData_, 0, len);
     }
 
+    long timestampDelta_ = 0;
     byte[] receiveData_;
     InputStream inputStream_;
+    boolean wait_;
 }
 
 class PacketReader implements IReader {
@@ -63,14 +88,18 @@ public class Main {
     public static void main(String[] args) {
         int port = args.length == 0 ? 20777 : Integer.parseInt(args[0]);
         // TODO - arg parsing
+        // If true read from file, false read from packets
         boolean readFromFile = true;
+        // if true (and reading from file) play back packets as if simulating the session, otherwise play as fast as
+        // you can
+        boolean playFileInRealTime = true;
 
         IReader reader;
 
         int rowsRead = 0;
         try {
             if (readFromFile) {
-                reader = new FileReader();
+                reader = new FileReader(playFileInRealTime);
             } else {
                 reader = new PacketReader(port);
             }

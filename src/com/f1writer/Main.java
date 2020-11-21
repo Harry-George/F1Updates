@@ -9,6 +9,8 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -44,6 +46,8 @@ public class Main {
                 serverSocket.receive(receivePacket);
 
                 outputStream.write(ByteBuffer.allocate(4).putInt(receivePacket.getLength()).array());
+
+                outputStream.write(ByteBuffer.allocate(8).putLong(System.nanoTime()).array());
                 System.out.println("Wrote bytes:" + receivePacket.getLength());
                 outputStream.write(receivePacket.getData(), 0, receivePacket.getLength());
 
