@@ -284,4 +284,17 @@ public class CarStatuses {
         return toPrint;
     }
 
+    public int[] estimateLapsLeft(int index) {
+        CarStatus status = carStatuses.get(index);
+        int[] estimations = new int[4];
+        for (int i = 0; i < 4; ++i) {
+            if (0 == status.m_tyresAgeLaps || 0 == status.m_tyresWear[i]) {
+                estimations[i] = 999;
+                continue;
+            }
+            estimations[i] = ((status.m_tyresAgeLaps * 100) / status.m_tyresWear[i]) - status.m_tyresAgeLaps;
+        }
+        return estimations;
+    }
+
 }

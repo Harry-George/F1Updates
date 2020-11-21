@@ -5,7 +5,9 @@ import java.net.*;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Optional;
+import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 
 
@@ -89,10 +91,15 @@ public class Main {
         int port = args.length == 0 ? 20777 : Integer.parseInt(args[0]);
         // TODO - arg parsing
         // If true read from file, false read from packets
-        boolean readFromFile = true;
+        boolean readFromFile = false;
         // if true (and reading from file) play back packets as if simulating the session, otherwise play as fast as
         // you can
         boolean playFileInRealTime = false;
+
+        Vector<String> driversWeCareAbouts = new Vector<String>();
+        driversWeCareAbouts.add("HAMILTON");
+
+        Vector<Integer> indexesWeCareAbout = new Vector<Integer>();
 
         IReader reader;
 
@@ -127,6 +134,17 @@ public class Main {
                         break;
                     case Participants:
                         Optional<Participants> participants = Participants.Parse(buffer);
+                        if (participants.isPresent()) {
+                            indexesWeCareAbout.clear();
+                            for (String driver : driversWeCareAbouts) {
+                                int len = participants.get().participants.size();
+                                for (int i = 0; i < len; ++i) {
+                                    if (participants.get().participants.elementAt(i).m_name.trim().equals(driver)) {
+                                        indexesWeCareAbout.add(i);
+                                    }
+                                }
+                            }
+                        }
                         System.out.println(participants);
 
                         break;
@@ -136,7 +154,10 @@ public class Main {
                         break;
                     case CarStatus:
                         Optional<CarStatuses> carStatuses = CarStatuses.Parse(buffer);
-                        System.out.println(carStatuses.get().carStatuses.elementAt(19));
+                        for (Integer index : indexesWeCareAbout) {
+
+                            System.out.println(Arrays.toString(carStatuses.get().estimateLapsLeft(index)));
+                        }
                         break;
                     case FinalClassifciation:
                         break;
