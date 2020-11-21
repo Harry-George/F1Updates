@@ -284,7 +284,7 @@ public class CarStatuses {
         return toPrint;
     }
 
-    public int[] estimateLapsLeft(int index) {
+    public int[] estimateLapsLeft(int index, int distanceInCurLap, int trackLength) {
         CarStatus status = carStatuses.get(index);
         int[] estimations = new int[4];
         for (int i = 0; i < 4; ++i) {

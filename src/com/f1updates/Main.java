@@ -89,7 +89,7 @@ public class Main {
         int port = args.length == 0 ? 20777 : Integer.parseInt(args[0]);
         // TODO - arg parsing
         // If true read from file, false read from packets
-        boolean readFromFile = false;
+        boolean readFromFile = true;
         // if true (and reading from file) play back packets as if simulating the session, otherwise play as fast as
         // you can
         boolean playFileInRealTime = false;
@@ -98,6 +98,7 @@ public class Main {
         driversWeCareAbouts.add("HAMILTON");
 
         Vector<Integer> indexesWeCareAbout = new Vector<>();
+        SessionData latestSessionData = null;
 
         IReader reader;
 
@@ -125,6 +126,11 @@ public class Main {
                         new Motion().GetSize();
                         break;
                     case Session:
+                        Optional<SessionData> sessionData = SessionData.Parse(buffer);
+                        if (sessionData.isPresent()) {
+                            latestSessionData = sessionData.get();
+                            System.out.println(latestSessionData.m_weatherForecastSamples);
+                        }
                         break;
                     case LapData:
                         break;
@@ -154,8 +160,9 @@ public class Main {
                         Optional<CarStatuses> carStatuses = CarStatuses.Parse(buffer);
                         if (carStatuses.isPresent()) {
                             for (Integer index : indexesWeCareAbout) {
-
-                                System.out.println(Arrays.toString(carStatuses.get().estimateLapsLeft(index)));
+                                if (null != latestSessionData) {
+                                    System.out.println(Arrays.toString(carStatuses.get().estimateLapsLeft(index, 0, latestSessionData.m_trackLength)));
+                                }
                             }
                         }
                         break;
