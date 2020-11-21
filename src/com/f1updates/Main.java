@@ -2,9 +2,7 @@ package com.f1updates;
 
 import java.io.*;
 import java.net.*;
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Vector;
@@ -12,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 
 interface IReader {
-    public ByteBuffer Get() throws Exception;
+    ByteBuffer Get() throws Exception;
 }
 
 class FileReader implements IReader {
@@ -96,10 +94,10 @@ public class Main {
         // you can
         boolean playFileInRealTime = false;
 
-        Vector<String> driversWeCareAbouts = new Vector<String>();
+        Vector<String> driversWeCareAbouts = new Vector<>();
         driversWeCareAbouts.add("HAMILTON");
 
-        Vector<Integer> indexesWeCareAbout = new Vector<Integer>();
+        Vector<Integer> indexesWeCareAbout = new Vector<>();
 
         IReader reader;
 
@@ -154,9 +152,11 @@ public class Main {
                         break;
                     case CarStatus:
                         Optional<CarStatuses> carStatuses = CarStatuses.Parse(buffer);
-                        for (Integer index : indexesWeCareAbout) {
+                        if (carStatuses.isPresent()) {
+                            for (Integer index : indexesWeCareAbout) {
 
-                            System.out.println(Arrays.toString(carStatuses.get().estimateLapsLeft(index)));
+                                System.out.println(Arrays.toString(carStatuses.get().estimateLapsLeft(index)));
+                            }
                         }
                         break;
                     case FinalClassifciation:
@@ -165,16 +165,10 @@ public class Main {
                         break;
                 }
             }
-        } catch (IOException e) {
-            System.out.println(e);
         } catch (Exception e) {
             System.out.println(e);
         }
         System.out.println("Read " + rowsRead + " rows.");
     }
 
-    public void run(int port) {
-
-        // should close serverSocket in finally block
-    }
 }

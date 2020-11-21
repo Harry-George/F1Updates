@@ -261,8 +261,8 @@ public class CarStatuses {
             Vector<CarStatus> carStatuses = new Vector<>();
             for (int i = 0; i < 22; ++i) {
                 Optional<CarStatus> participant = CarStatus.Parse(buf);
-                if (participant == null) {
-                    return null;
+                if (!participant.isPresent()) {
+                    return Optional.empty();
                 } else {
                     carStatuses.add(participant.get());
                 }
