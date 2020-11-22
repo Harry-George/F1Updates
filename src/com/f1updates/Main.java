@@ -3,6 +3,7 @@ package com.f1updates;
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Vector;
@@ -83,10 +84,17 @@ class PacketReader implements IReader {
     byte[] buffer_ = new byte[2000];
 }
 
+class Data {
+    SessionData sessionData = null;
+    CarsLapData carsLapData = null;
+    Participants participants = null;
+    CarStatuses carStatuses = null;
+}
+
 public class Main {
 
     public static void main(String[] args) {
-        int port = args.length == 0 ? 20777 : Integer.parseInt(args[0]);
+        int port = args.length == 0 ? 20778 : Integer.parseInt(args[0]);
         // TODO - arg parsing
         // If true read from file, false read from packets
         boolean readFromFile = false;
@@ -94,12 +102,14 @@ public class Main {
         // you can
         boolean playFileInRealTime = false;
 
-        Vector<String> driversWeCareAbouts = new Vector<>();
-        driversWeCareAbouts.add("HAMILTON");
+        Vector<Integer> driversWeCareAbouts = new Vector<>();
+        driversWeCareAbouts.add(19);
+        driversWeCareAbouts.add(71);
 
         Vector<Integer> indexesWeCareAbout = new Vector<>();
-        SessionData latestSessionData = null;
-        CarsLapData latestCarsLapData = null;
+        Data latestData = new Data();
+
+        long lastUpdateTime = Instant.now().getEpochSecond();
 
         IReader reader;
 
@@ -120,7 +130,7 @@ public class Main {
                     System.out.println("Failed to parse");
                     continue;
                 }
-                System.out.println(header.get().packetId.toString());
+//                System.out.println(header.get().packetId.toString());
                 switch (header.get().packetId) {
 
                     case Motion:
@@ -129,14 +139,13 @@ public class Main {
                     case Session:
                         Optional<SessionData> sessionData = SessionData.Parse(buffer);
                         if (sessionData.isPresent()) {
-                            latestSessionData = sessionData.get();
-                            System.out.println(latestSessionData.m_weatherForecastSamples);
+                            latestData.sessionData = sessionData.get();
                         }
                         break;
                     case LapData:
                         Optional<CarsLapData> carsLapData = CarsLapData.Parse(buffer);
                         if (carsLapData.isPresent()) {
-                            latestCarsLapData = carsLapData.get();
+                            latestData.carsLapData = carsLapData.get();
                         }
                         break;
                     case Event:
@@ -144,17 +153,17 @@ public class Main {
                     case Participants:
                         Optional<Participants> participants = Participants.Parse(buffer);
                         if (participants.isPresent()) {
+                            latestData.participants = participants.get();
                             indexesWeCareAbout.clear();
-                            for (String driver : driversWeCareAbouts) {
+                            for (Integer driver : driversWeCareAbouts) {
                                 int len = participants.get().participants.size();
                                 for (int i = 0; i < len; ++i) {
-                                    if (participants.get().participants.elementAt(i).m_name.trim().equals(driver)) {
+                                    if (participants.get().participants.elementAt(i).m_raceNumber == driver) {
                                         indexesWeCareAbout.add(i);
                                     }
                                 }
                             }
                         }
-                        System.out.println(participants);
 
                         break;
                     case CarSetups:
@@ -164,20 +173,32 @@ public class Main {
                     case CarStatus:
                         Optional<CarStatuses> carStatuses = CarStatuses.Parse(buffer);
                         if (carStatuses.isPresent()) {
-                            for (Integer index : indexesWeCareAbout) {
-                                if (null != latestSessionData && null != latestCarsLapData) {
-                                    System.out.println(Arrays.toString(
-                                            carStatuses.get().estimateLapsLeft(index,
-                                                    (int) latestCarsLapData.carsLapData.get(index).m_lapDistance,
-                                                    latestSessionData.m_trackLength)));
-                                }
-                            }
+                            latestData.carStatuses = carStatuses.get();
+
                         }
                         break;
                     case FinalClassifciation:
                         break;
                     case LobbyInfo:
                         break;
+                }
+
+                // Print
+                if (lastUpdateTime + 5 < Instant.now().getEpochSecond()) {
+                    if (indexesWeCareAbout.size() != driversWeCareAbouts.size()) {
+                        System.out.println(latestData.participants.participants);
+                        continue;
+                    }
+                    lastUpdateTime = Instant.now().getEpochSecond();
+                    System.out.println(latestData.sessionData.m_weatherForecastSamples);
+                    for (Integer index : indexesWeCareAbout) {
+                        if (null != latestData.sessionData && null != latestData.carsLapData && null != latestData.carStatuses) {
+                            System.out.println(Arrays.toString(
+                                    latestData.carStatuses.estimateLapsLeft(index,
+                                            (int) latestData.carsLapData.carsLapData.get(index).m_lapDistance,
+                                            latestData.sessionData.m_trackLength)));
+                        }
+                    }
                 }
             }
         } catch (Exception e) {
