@@ -146,6 +146,71 @@ class CarStatus {
 
     }
 
+    public static String FuelMixString(int mix) {
+        switch (mix) {
+            case 0:
+                return "lean";
+            case 1:
+                return "standard";
+            case 2:
+                return "rich";
+            case 3:
+                return "max";
+        }
+        return "unknown";
+    }
+
+    public static String ActualTyreCompoundToString(int compound) {
+        switch (compound) {
+            case 16:
+                return "C5";
+            case 17:
+                return "C4";
+            case 18:
+                return "C3";
+            case 19:
+                return "C2";
+            case 20:
+                return "C1";
+            case 7:
+                return "inter";
+            case 8:
+                return "wet";
+            case 9:
+                return "dry";
+            case 10:
+                return "wet";
+            case 11:
+                return "super soft";
+            case 12:
+                return "soft";
+            case 13:
+                return "medium";
+            case 14:
+                return "hard";
+            case 15:
+                return "wet";
+        }
+        return "unknown";
+    }
+
+    public static String VisualCompoundToString(int compound) {
+        switch (compound) {
+            case 16:
+                return "soft";
+            case 17:
+                return "medium";
+            case 18:
+                return "hard";
+            case 7:
+                return "inter";
+            case 8:
+                return "wet";
+
+        }
+        return "unknown";
+    }
+
     public static Optional<CarStatus> Parse(ByteBuffer buf) {
         try {
 

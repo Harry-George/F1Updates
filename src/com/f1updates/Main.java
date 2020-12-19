@@ -91,6 +91,16 @@ class Data {
     CarStatuses carStatuses = null;
 }
 
+class DriverInfo {
+    DriverInfo(Integer driverNumber, Integer driverIndex) {
+        this.driverNumber = driverNumber;
+        this.driverIndex = driverIndex;
+    }
+
+    Integer driverNumber;
+    Integer driverIndex;
+}
+
 public class Main {
 
     public static void main(String[] args) {
@@ -102,11 +112,12 @@ public class Main {
         // you can
         boolean playFileInRealTime = false;
 
-        Vector<Integer> driversWeCareAbouts = new Vector<>();
-        driversWeCareAbouts.add(19);
-        driversWeCareAbouts.add(71);
+        Vector<DriverInfo> driversWeCareAbouts = new Vector<>();
+        driversWeCareAbouts.add(new DriverInfo(19, null));
+        driversWeCareAbouts.add(new DriverInfo(71, null));
+        driversWeCareAbouts.add(new DriverInfo(69, null));
+        driversWeCareAbouts.add(new DriverInfo(28, null));
 
-        Vector<Integer> indexesWeCareAbout = new Vector<>();
         Data latestData = new Data();
 
         long lastUpdateTime = Instant.now().getEpochSecond();
@@ -154,15 +165,22 @@ public class Main {
                         Optional<Participants> participants = Participants.Parse(buffer);
                         if (participants.isPresent()) {
                             latestData.participants = participants.get();
-                            indexesWeCareAbout.clear();
-                            for (Integer driver : driversWeCareAbouts) {
+                            for (DriverInfo driver : driversWeCareAbouts) {
                                 int len = participants.get().participants.size();
                                 for (int i = 0; i < len; ++i) {
-                                    if (participants.get().participants.elementAt(i).m_raceNumber == driver) {
-                                        indexesWeCareAbout.add(i);
+                                    if (participants.get().participants.elementAt(i).m_raceNumber == driver.driverNumber) {
+                                        driver.driverIndex = i;
                                     }
                                 }
                             }
+//                            latestData.participants = participants.get();
+//                            driversWeCareAbouts.clear();
+//                            int len = participants.get().participants.size();
+//                            for (int i = 0; i < len; ++i) {
+//                                if (participants.get().participants.elementAt(i).m_raceNumber != 0) {
+//                                    driversWeCareAbouts.add(new DriverInfo(participants.get().participants.elementAt(i).m_raceNumber, i));
+//                                }
+//                            }
                         }
 
                         break;
@@ -185,18 +203,36 @@ public class Main {
 
                 // Print
                 if (lastUpdateTime + 5 < Instant.now().getEpochSecond()) {
-                    if (indexesWeCareAbout.size() != driversWeCareAbouts.size()) {
-                        System.out.println(latestData.participants.participants);
-                        continue;
-                    }
                     lastUpdateTime = Instant.now().getEpochSecond();
-                    System.out.println(latestData.sessionData.m_weatherForecastSamples);
-                    for (Integer index : indexesWeCareAbout) {
+                    for (WeatherForecast cast : latestData.sessionData.m_weatherForecastSamples) {
+                        System.out.println(cast);
+                    }
+                    for (DriverInfo index : driversWeCareAbouts) {
+                        if (index.driverIndex == null) {
+                            System.out.println(latestData.participants.participants);
+                            break;
+                        }
+
                         if (null != latestData.sessionData && null != latestData.carsLapData && null != latestData.carStatuses) {
-                            System.out.println(Arrays.toString(
-                                    latestData.carStatuses.estimateLapsLeft(index,
-                                            (int) latestData.carsLapData.carsLapData.get(index).m_lapDistance,
-                                            latestData.sessionData.m_trackLength)));
+                            String string = new String("Car: ");
+                            string += index.driverNumber;
+                            string += " ";
+
+                            string += "Tyres[";
+                            string += "Compound:" + CarStatus.VisualCompoundToString(latestData.carStatuses.carStatuses.get(index.driverIndex).m_visualTyreCompound);
+                            string += " Age:" + latestData.carStatuses.carStatuses.get(index.driverIndex).m_tyresAgeLaps;
+                            string += " LapsLeft:";
+                            string += Arrays.toString(
+                                    latestData.carStatuses.estimateLapsLeft(index.driverIndex,
+                                            (int) latestData.carsLapData.carsLapData.get(index.driverIndex).m_lapDistance,
+                                            latestData.sessionData.m_trackLength));
+                            string += "] Fuel[laps:";
+                            string += latestData.carStatuses.carStatuses.get(index.driverIndex).m_fuelRemainingLaps;
+                            string += " mix:";
+                            string += CarStatus.FuelMixString(latestData.carStatuses.carStatuses.get(index.driverIndex).m_fuelMix);
+                            string += "]";
+
+                            System.out.println(string);
                         }
                     }
                 }
