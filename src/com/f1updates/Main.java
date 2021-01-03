@@ -4,9 +4,7 @@ import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.Vector;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 
@@ -103,7 +101,18 @@ class DriverInfo {
 
 public class Main {
 
-    public static void main(String[] args) {
+    public static final String ANSI_RESET = "\u001B[0m";
+    public static final String ANSI_RED = "\u001B[31m";
+
+    public static String PrintIfDamage(String name, int value) {
+        String ret = "";
+        if (value > 0) {
+            ret += ANSI_RED + "'" + name + ":" + value + "' " + ANSI_RESET;
+        }
+        return ret;
+    }
+
+    public static void main(String[] args) throws Exception {
         int port = args.length == 0 ? 20777 : Integer.parseInt(args[0]);
         // TODO - arg parsing
         // If true read from file, false read from packets
@@ -164,23 +173,29 @@ public class Main {
                     case Participants:
                         Optional<Participants> participants = Participants.Parse(buffer);
                         if (participants.isPresent()) {
-                            latestData.participants = participants.get();
-                            for (DriverInfo driver : driversWeCareAbouts) {
+                            boolean printAllDrivers = true;
+
+                            if (printAllDrivers) {
+                                latestData.participants = participants.get();
+                                driversWeCareAbouts.clear();
                                 int len = participants.get().participants.size();
                                 for (int i = 0; i < len; ++i) {
-                                    if (participants.get().participants.elementAt(i).m_raceNumber == driver.driverNumber) {
-                                        driver.driverIndex = i;
+                                    if (participants.get().participants.elementAt(i).m_raceNumber != 0) {
+                                        driversWeCareAbouts.add(new DriverInfo(participants.get().participants.elementAt(i).m_raceNumber, i));
+                                    }
+                                }
+                            } else {
+                                latestData.participants = participants.get();
+                                for (DriverInfo driver : driversWeCareAbouts) {
+                                    int len = participants.get().participants.size();
+                                    for (int i = 0; i < len; ++i) {
+                                        if (participants.get().participants.elementAt(i).m_raceNumber == driver.driverNumber) {
+                                            driver.driverIndex = i;
+                                        }
                                     }
                                 }
                             }
-//                            latestData.participants = participants.get();
-//                            driversWeCareAbouts.clear();
-//                            int len = participants.get().participants.size();
-//                            for (int i = 0; i < len; ++i) {
-//                                if (participants.get().participants.elementAt(i).m_raceNumber != 0) {
-//                                    driversWeCareAbouts.add(new DriverInfo(participants.get().participants.elementAt(i).m_raceNumber, i));
-//                                }
-//                            }
+
                         }
 
                         break;
@@ -202,47 +217,76 @@ public class Main {
                 }
 
                 // Print
-                if (lastUpdateTime + 5 < Instant.now().getEpochSecond()) {
+                if (lastUpdateTime + 2 < Instant.now().getEpochSecond()) {
                     lastUpdateTime = Instant.now().getEpochSecond();
-                    if (null == latestData.sessionData || null == latestData.carsLapData || null == latestData.carStatuses) {
+                    if (null == latestData.sessionData
+                            || null == latestData.carsLapData
+                            || null == latestData.carStatuses
+                            || null == latestData.participants) {
                         System.out.println("No data");
                         continue;
                     }
                     for (WeatherForecast cast : latestData.sessionData.m_weatherForecastSamples) {
                         System.out.println(cast);
                     }
+                    Map<Integer, String> OutMap = new TreeMap<>();
                     for (DriverInfo index : driversWeCareAbouts) {
                         if (index.driverIndex == null) {
                             System.out.println(latestData.participants.participants);
                             break;
                         }
 
-                        String string = new String("Car: ");
+                        CarLapData curCarLapData = latestData.carsLapData.carsLapData.get(index.driverIndex);
+                        String string = new String("");
+                        string += "Pos:";
+                        string += curCarLapData.m_carPosition;
+                        string += "\tCar:";
                         string += index.driverNumber;
-                        string += " ";
 
-                        string += "Tyres[";
-                        string += "Compound:" + CarStatus.VisualCompoundToString(latestData.carStatuses.carStatuses.get(index.driverIndex).m_visualTyreCompound);
-                        string += " Age:" + latestData.carStatuses.carStatuses.get(index.driverIndex).m_tyresAgeLaps;
+                        CarStatus curCarStatus = latestData.carStatuses.carStatuses.get(index.driverIndex);
+                        string += "\tTyres[";
+                        string += "Compound:" + CarStatus.VisualCompoundToString(curCarStatus.m_visualTyreCompound);
+                        string += " Age:" + curCarStatus.m_tyresAgeLaps;
                         string += " LapsLeft:";
                         string += Arrays.toString(
                                 latestData.carStatuses.estimateLapsLeft(index.driverIndex,
-                                        (int) latestData.carsLapData.carsLapData.get(index.driverIndex).m_lapDistance,
+                                        (int) curCarLapData.m_lapDistance,
                                         latestData.sessionData.m_trackLength));
-                        string += "] Fuel[laps:";
-                        string += latestData.carStatuses.carStatuses.get(index.driverIndex).m_fuelRemainingLaps;
+                        string += "]\tFuel[laps:";
+                        string += curCarStatus.m_fuelRemainingLaps;
                         string += " mix:";
-                        string += CarStatus.FuelMixString(latestData.carStatuses.carStatuses.get(index.driverIndex).m_fuelMix);
+                        string += CarStatus.FuelMixString(curCarStatus.m_fuelMix);
                         string += "]";
 
-                        System.out.println(string);
+
+                        {
+                            int tyreIndex = 0;
+                            String damageString = "";
+                            for (int tyreValue : curCarStatus.m_tyresDamage) {
+                                damageString += PrintIfDamage("TyreDamage" + tyreIndex++, tyreValue);
+                            }
+                            damageString += PrintIfDamage("drs faults", curCarStatus.m_drsFault);
+                            damageString += PrintIfDamage("frontLeftWingDamage", curCarStatus.m_frontLeftWingDamage);
+                            damageString += PrintIfDamage("frontRightWingDamage", curCarStatus.m_frontRightWingDamage);
+                            damageString += PrintIfDamage("rearWingDamage", curCarStatus.m_rearWingDamage);
+                            if (!damageString.isEmpty()) {
+                                string += "\n" + damageString;
+                            }
+                        }
+
+                        OutMap.put(curCarLapData.m_carPosition, string);
+
+                    }
+                    for (Map.Entry<Integer, String> pair : OutMap.entrySet()) {
+                        System.out.println(pair.getValue());
                     }
                 }
             }
         } catch (Exception e) {
             System.out.println(e);
+            System.out.println("Read " + rowsRead + " rows.");
+            throw e;
         }
-        System.out.println("Read " + rowsRead + " rows.");
     }
 
 }
