@@ -104,11 +104,22 @@ public class Main {
     public static final String ANSI_RESET = "\u001B[0m";
     public static final String ANSI_RED = "\u001B[31m";
     public static final String ANSI_BLUE = "\u001B[34m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
 
     public static String PrintIfDamage(String name, int value) {
         String ret = "";
         if (value > 0) {
             ret += ANSI_RED + "'" + name + ":" + value + "' " + ANSI_RESET;
+        }
+        return ret;
+    }
+
+    public static String PrintIfInPits(int value) {
+        String ret = "";
+        if (value == 1) {
+            ret += ANSI_YELLOW + "'PITTING' " + ANSI_RESET;
+        } else if (value == 2) {
+            ret += ANSI_YELLOW + "'IN PITS' " + ANSI_RESET;
         }
         return ret;
     }
@@ -125,7 +136,7 @@ public class Main {
         Vector<DriverInfo> driversWeCareAbouts = new Vector<>();
         Set<Integer> driversToHighlight = new HashSet<Integer>();
         // Note: If all drivers are being printed, is the driver index.
-        driversToHighlight.add(104);
+        driversToHighlight.add(102);
 
         driversWeCareAbouts.add(new DriverInfo(19, null));
 //        driversWeCareAbouts.add(new DriverInfo(71, null));
@@ -273,17 +284,21 @@ public class Main {
                         {
                             int tyreIndex = 0;
                             String damageString = "";
-                            for (int tyreValue : curCarStatus.m_tyresDamage) {
-                                damageString += PrintIfDamage("TyreDamage" + tyreIndex++, tyreValue);
-                            }
+//                            for (int tyreValue : curCarStatus.m_tyresDamage) {
+//                                damageString += PrintIfDamage("TyreDamage" + tyreIndex++, tyreValue);
+//                            }
                             damageString += PrintIfDamage("drs faults", curCarStatus.m_drsFault);
                             damageString += PrintIfDamage("frontLeftWingDamage", curCarStatus.m_frontLeftWingDamage);
                             damageString += PrintIfDamage("frontRightWingDamage", curCarStatus.m_frontRightWingDamage);
                             damageString += PrintIfDamage("rearWingDamage", curCarStatus.m_rearWingDamage);
+
+                            damageString += PrintIfInPits(curCarLapData.m_pitStatus);
+
                             if (!damageString.isEmpty()) {
                                 string += "\n" + damageString;
                             }
                         }
+
                         string += ANSI_RESET;
 
                         OutMap.put(curCarLapData.m_carPosition, string);
