@@ -104,7 +104,7 @@ class DriverInfo {
 public class Main {
 
     public static void main(String[] args) {
-        int port = args.length == 0 ? 20778 : Integer.parseInt(args[0]);
+        int port = args.length == 0 ? 20777 : Integer.parseInt(args[0]);
         // TODO - arg parsing
         // If true read from file, false read from packets
         boolean readFromFile = false;
@@ -114,9 +114,9 @@ public class Main {
 
         Vector<DriverInfo> driversWeCareAbouts = new Vector<>();
         driversWeCareAbouts.add(new DriverInfo(19, null));
-        driversWeCareAbouts.add(new DriverInfo(71, null));
-        driversWeCareAbouts.add(new DriverInfo(69, null));
-        driversWeCareAbouts.add(new DriverInfo(28, null));
+//        driversWeCareAbouts.add(new DriverInfo(71, null));
+//        driversWeCareAbouts.add(new DriverInfo(69, null));
+//        driversWeCareAbouts.add(new DriverInfo(28, null));
 
         Data latestData = new Data();
 
@@ -204,6 +204,10 @@ public class Main {
                 // Print
                 if (lastUpdateTime + 5 < Instant.now().getEpochSecond()) {
                     lastUpdateTime = Instant.now().getEpochSecond();
+                    if (null == latestData.sessionData || null == latestData.carsLapData || null == latestData.carStatuses) {
+                        System.out.println("No data");
+                        continue;
+                    }
                     for (WeatherForecast cast : latestData.sessionData.m_weatherForecastSamples) {
                         System.out.println(cast);
                     }
@@ -213,27 +217,25 @@ public class Main {
                             break;
                         }
 
-                        if (null != latestData.sessionData && null != latestData.carsLapData && null != latestData.carStatuses) {
-                            String string = new String("Car: ");
-                            string += index.driverNumber;
-                            string += " ";
+                        String string = new String("Car: ");
+                        string += index.driverNumber;
+                        string += " ";
 
-                            string += "Tyres[";
-                            string += "Compound:" + CarStatus.VisualCompoundToString(latestData.carStatuses.carStatuses.get(index.driverIndex).m_visualTyreCompound);
-                            string += " Age:" + latestData.carStatuses.carStatuses.get(index.driverIndex).m_tyresAgeLaps;
-                            string += " LapsLeft:";
-                            string += Arrays.toString(
-                                    latestData.carStatuses.estimateLapsLeft(index.driverIndex,
-                                            (int) latestData.carsLapData.carsLapData.get(index.driverIndex).m_lapDistance,
-                                            latestData.sessionData.m_trackLength));
-                            string += "] Fuel[laps:";
-                            string += latestData.carStatuses.carStatuses.get(index.driverIndex).m_fuelRemainingLaps;
-                            string += " mix:";
-                            string += CarStatus.FuelMixString(latestData.carStatuses.carStatuses.get(index.driverIndex).m_fuelMix);
-                            string += "]";
+                        string += "Tyres[";
+                        string += "Compound:" + CarStatus.VisualCompoundToString(latestData.carStatuses.carStatuses.get(index.driverIndex).m_visualTyreCompound);
+                        string += " Age:" + latestData.carStatuses.carStatuses.get(index.driverIndex).m_tyresAgeLaps;
+                        string += " LapsLeft:";
+                        string += Arrays.toString(
+                                latestData.carStatuses.estimateLapsLeft(index.driverIndex,
+                                        (int) latestData.carsLapData.carsLapData.get(index.driverIndex).m_lapDistance,
+                                        latestData.sessionData.m_trackLength));
+                        string += "] Fuel[laps:";
+                        string += latestData.carStatuses.carStatuses.get(index.driverIndex).m_fuelRemainingLaps;
+                        string += " mix:";
+                        string += CarStatus.FuelMixString(latestData.carStatuses.carStatuses.get(index.driverIndex).m_fuelMix);
+                        string += "]";
 
-                            System.out.println(string);
-                        }
+                        System.out.println(string);
                     }
                 }
             }
