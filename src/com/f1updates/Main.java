@@ -103,6 +103,7 @@ public class Main {
 
     public static final String ANSI_RESET = "\u001B[0m";
     public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_BLUE = "\u001B[34m";
 
     public static String PrintIfDamage(String name, int value) {
         String ret = "";
@@ -122,6 +123,10 @@ public class Main {
         boolean playFileInRealTime = false;
 
         Vector<DriverInfo> driversWeCareAbouts = new Vector<>();
+        Set<Integer> driversToHighlight = new HashSet<Integer>();
+        // Note: If all drivers are being printed, is the driver index.
+        driversToHighlight.add(104);
+
         driversWeCareAbouts.add(new DriverInfo(19, null));
 //        driversWeCareAbouts.add(new DriverInfo(71, null));
 //        driversWeCareAbouts.add(new DriverInfo(69, null));
@@ -181,7 +186,7 @@ public class Main {
                                 int len = participants.get().participants.size();
                                 for (int i = 0; i < len; ++i) {
                                     if (participants.get().participants.elementAt(i).m_raceNumber != 0) {
-                                        driversWeCareAbouts.add(new DriverInfo(participants.get().participants.elementAt(i).m_raceNumber, i));
+                                        driversWeCareAbouts.add(new DriverInfo(participants.get().participants.elementAt(i).m_driverId, i));
                                     }
                                 }
                             } else {
@@ -237,13 +242,19 @@ public class Main {
                         }
 
                         CarLapData curCarLapData = latestData.carsLapData.carsLapData.get(index.driverIndex);
+                        CarStatus curCarStatus = latestData.carStatuses.carStatuses.get(index.driverIndex);
+
                         String string = new String("");
+
+                        if (driversToHighlight.contains(index.driverNumber)) {
+                            string += ANSI_BLUE;
+                        }
+
                         string += "Pos:";
                         string += curCarLapData.m_carPosition;
                         string += "\tCar:";
                         string += index.driverNumber;
 
-                        CarStatus curCarStatus = latestData.carStatuses.carStatuses.get(index.driverIndex);
                         string += "\tTyres[";
                         string += "Compound:" + CarStatus.VisualCompoundToString(curCarStatus.m_visualTyreCompound);
                         string += " Age:" + curCarStatus.m_tyresAgeLaps;
@@ -273,6 +284,7 @@ public class Main {
                                 string += "\n" + damageString;
                             }
                         }
+                        string += ANSI_RESET;
 
                         OutMap.put(curCarLapData.m_carPosition, string);
 
