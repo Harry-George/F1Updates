@@ -155,7 +155,7 @@ class CarStatus {
             case 2:
                 return "rich";
             case 3:
-                return "max";
+                return "max!";
         }
         return "unknown";
     }
@@ -194,18 +194,24 @@ class CarStatus {
         return "unknown";
     }
 
+    public static final String ANSI_RESET = "\u001B[0m";
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_BLUE = "\u001B[34m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_GREEN = "\u001B[33m";
+
     public static String VisualCompoundToString(int compound) {
         switch (compound) {
             case 16:
-                return "soft";
+                return ANSI_RED + "S" + ANSI_RESET;
             case 17:
-                return "medium";
+                return ANSI_YELLOW + "M" + ANSI_RESET;
             case 18:
-                return "hard";
+                return "H";
             case 7:
-                return "inter";
+                return ANSI_GREEN + "I" + ANSI_RESET;
             case 8:
-                return "wet";
+                return ANSI_BLUE + "W" + ANSI_RESET;
 
         }
         return "unknown";

@@ -138,22 +138,33 @@ public class Main {
     }
 
     public static void main(String[] args) throws Exception {
-        int port = args.length == 0 ? 20777 : Integer.parseInt(args[0]);
+        int port = args.length == 0 ? 20778 : Integer.parseInt(args[0]);
         // TODO - arg parsing
         // If true read from file, false read from packets
-        boolean readFromFile = true;
+        boolean readFromFile = false;
         boolean showDeltas = true;
         // if true (and reading from file) play back packets as if simulating the session, otherwise play as fast as
         // you can
         boolean playFileInRealTime = true;
+        boolean showDriverId = false;
+
 
         Vector<DriverInfo> driversWeCareAbouts = new Vector<>();
-        Set<Integer> driversToHighlight = new HashSet<Integer>();
-        // Note: If all drivers are being printed, is the driver index.
-        driversToHighlight.add(102);
-        driversToHighlight.add(15);
+        class Highlight {
+            String name;
+            String colour;
 
-        driversWeCareAbouts.add(new DriverInfo(19, null));
+            public Highlight(String name, String colour) {
+                this.name = name;
+                this.colour = colour;
+            }
+        }
+        Map<Integer, Highlight> driversToHighlight = new HashMap<Integer, Highlight>();
+        // Note: If all drivers are being printed, is the driver index.
+        driversToHighlight.put(110, new Highlight("TMS", ANSI_BLUE));
+        driversToHighlight.put(112, new Highlight("ALX", "\u001b[38;5;90m"));
+
+//        driversWeCareAbouts.add(new DriverInfo(19, null));
 //        driversWeCareAbouts.add(new DriverInfo(71, null));
 //        driversWeCareAbouts.add(new DriverInfo(69, null));
 //        driversWeCareAbouts.add(new DriverInfo(28, null));
@@ -291,11 +302,25 @@ public class Main {
                         string += "Pos:";
                         string += curCarLapData.m_carPosition;
                         string += "\tCar:";
-                        string += index.driverNumber;
+                        if (driversToHighlight.containsKey(index.driverNumber)) {
+                            string += driversToHighlight.get(index.driverNumber).name;
+                        } else {
+                            string += index.driverNumber;
+                        }
                         string += ANSI_RESET;
 
-                        if (driversToHighlight.contains(index.driverNumber)) {
-                            string += ANSI_BLUE;
+                        if (showDriverId) {
+                            string += " DriverID:" + index.driverNumber;
+                        }
+
+                        if (driversToHighlight.containsKey(index.driverNumber)) {
+                            string += driversToHighlight.get(index.driverNumber).colour;
+                        }
+
+                        if (curCarLapData.m_resultStatus != 2) {
+                            string += ANSI_RED + " Status:" + curCarLapData.m_resultStatus + ANSI_RESET;
+                            OutMap.put(curCarLapData.m_carPosition, string);
+                            continue;
                         }
 
                         string += "\tTyres[";
@@ -311,10 +336,6 @@ public class Main {
                         string += " mix:";
                         string += CarStatus.FuelMixString(curCarStatus.m_fuelMix);
                         string += "]";
-
-                        if (curCarLapData.m_resultStatus != 2) {
-                            string += ANSI_RED + " Status:" + curCarLapData.m_resultStatus + ANSI_RESET;
-                        }
 
                         if (deltas != null) {
                             string += "\tdistance:" + deltas.get(curCarLapData.m_carPosition);
