@@ -335,7 +335,7 @@ public class Main {
                             damageString += PrintIfInPits(curCarLapData.m_pitStatus);
 
                             if (!damageString.isEmpty()) {
-                                string += "\n" + damageString;
+                                string += "\t" + damageString;
                             }
                         }
 
