@@ -88,6 +88,7 @@ class Data {
     CarsLapData carsLapData = null;
     Participants participants = null;
     CarStatuses carStatuses = null;
+    Map<Integer, Integer> previousPositions = null;
 }
 
 class DriverInfo {
@@ -107,6 +108,16 @@ public class Main {
     public static final String ANSI_BLUE = "\u001B[34m";
     public static final String ANSI_YELLOW = "\u001B[33m";
     public static final String ANSI_GREEN = "\u001B[33m";
+
+    public static String GetPositionColour(Integer position, Integer previousPosition) {
+        if (previousPosition > position) {
+            return ANSI_RED;
+        }
+        if (previousPosition < position) {
+            return ANSI_GREEN;
+        }
+        return "";
+    }
 
     public static String PrintIfDamage(String name, int value) {
         String ret = "";
@@ -134,12 +145,13 @@ public class Main {
         boolean showDeltas = true;
         // if true (and reading from file) play back packets as if simulating the session, otherwise play as fast as
         // you can
-        boolean playFileInRealTime = false;
+        boolean playFileInRealTime = true;
 
         Vector<DriverInfo> driversWeCareAbouts = new Vector<>();
         Set<Integer> driversToHighlight = new HashSet<Integer>();
         // Note: If all drivers are being printed, is the driver index.
         driversToHighlight.add(102);
+        driversToHighlight.add(15);
 
         driversWeCareAbouts.add(new DriverInfo(19, null));
 //        driversWeCareAbouts.add(new DriverInfo(71, null));
@@ -147,6 +159,8 @@ public class Main {
 //        driversWeCareAbouts.add(new DriverInfo(28, null));
 
         Data latestData = new Data();
+        latestData.previousPositions = new TreeMap<>();
+
 
         long lastUpdateTime = Instant.now().getEpochSecond();
 
@@ -269,14 +283,20 @@ public class Main {
 
                         String string = new String("");
 
-                        if (driversToHighlight.contains(index.driverNumber)) {
-                            string += ANSI_BLUE;
+                        if (latestData.previousPositions.get(index.driverIndex) != null) {
+                            string += GetPositionColour(latestData.previousPositions.get(index.driverIndex), curCarLapData.m_carPosition);
                         }
+                        latestData.previousPositions.put(index.driverIndex, curCarLapData.m_carPosition);
 
                         string += "Pos:";
                         string += curCarLapData.m_carPosition;
                         string += "\tCar:";
                         string += index.driverNumber;
+                        string += ANSI_RESET;
+
+                        if (driversToHighlight.contains(index.driverNumber)) {
+                            string += ANSI_BLUE;
+                        }
 
                         string += "\tTyres[";
                         string += "Compound:" + CarStatus.VisualCompoundToString(curCarStatus.m_visualTyreCompound);
@@ -327,6 +347,8 @@ public class Main {
                     for (Map.Entry<Integer, String> pair : OutMap.entrySet()) {
                         System.out.println(pair.getValue());
                     }
+
+
                 }
             }
         } catch (Exception e) {
