@@ -99,7 +99,7 @@ public class Participants {
             int numOfParticipants = buf.get() & 0xFF;
 
             Vector<Participant> participants = new Vector<>();
-            for (int i = 0; i < 22; ++i) {
+            for (int i = 0; i < numOfParticipants; ++i) {
                 Optional<Participant> participant = Participant.Parse(buf);
                 if (participant == null) {
                     return null;

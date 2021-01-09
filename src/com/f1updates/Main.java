@@ -3,6 +3,7 @@ package com.f1updates;
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
+import java.text.DecimalFormat;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -105,6 +106,7 @@ public class Main {
     public static final String ANSI_RED = "\u001B[31m";
     public static final String ANSI_BLUE = "\u001B[34m";
     public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_GREEN = "\u001B[33m";
 
     public static String PrintIfDamage(String name, int value) {
         String ret = "";
@@ -128,7 +130,8 @@ public class Main {
         int port = args.length == 0 ? 20777 : Integer.parseInt(args[0]);
         // TODO - arg parsing
         // If true read from file, false read from packets
-        boolean readFromFile = false;
+        boolean readFromFile = true;
+        boolean showDeltas = true;
         // if true (and reading from file) play back packets as if simulating the session, otherwise play as fast as
         // you can
         boolean playFileInRealTime = false;
@@ -146,6 +149,8 @@ public class Main {
         Data latestData = new Data();
 
         long lastUpdateTime = Instant.now().getEpochSecond();
+
+        DecimalFormat floatingPointFormat = new DecimalFormat("0.00");
 
         IReader reader;
 
@@ -233,7 +238,8 @@ public class Main {
                 }
 
                 // Print
-                if (lastUpdateTime + 2 < Instant.now().getEpochSecond()) {
+                if (lastUpdateTime + 2 < Instant.now().getEpochSecond() ||
+                        !playFileInRealTime) {
                     lastUpdateTime = Instant.now().getEpochSecond();
                     if (null == latestData.sessionData
                             || null == latestData.carsLapData
@@ -246,6 +252,12 @@ public class Main {
                         System.out.println(cast);
                     }
                     Map<Integer, String> OutMap = new TreeMap<>();
+
+                    Map<Integer, String> deltas = null;
+                    if (showDeltas) {
+                        deltas = latestData.carsLapData.CalculateDeltas(latestData.sessionData.m_trackLength);
+                    }
+
                     for (DriverInfo index : driversWeCareAbouts) {
                         if (index.driverIndex == null) {
                             System.out.println(latestData.participants.participants);
@@ -275,18 +287,26 @@ public class Main {
                                         (int) curCarLapData.m_lapDistance,
                                         latestData.sessionData.m_trackLength));
                         string += "]\tFuel[laps:";
-                        string += curCarStatus.m_fuelRemainingLaps;
+                        string += floatingPointFormat.format(curCarStatus.m_fuelRemainingLaps);
                         string += " mix:";
                         string += CarStatus.FuelMixString(curCarStatus.m_fuelMix);
                         string += "]";
 
+                        if (curCarLapData.m_resultStatus != 2) {
+                            string += ANSI_RED + " Status:" + curCarLapData.m_resultStatus + ANSI_RESET;
+                        }
+
+                        if (deltas != null) {
+                            string += "\tdistance:" + deltas.get(curCarLapData.m_carPosition);
+                        }
+
+                        if (curCarLapData.m_penalties > 0) {
+                            string += ANSI_RED + "\tPenalties: +" + curCarLapData.m_penalties + ANSI_RESET;
+                        }
 
                         {
                             int tyreIndex = 0;
                             String damageString = "";
-//                            for (int tyreValue : curCarStatus.m_tyresDamage) {
-//                                damageString += PrintIfDamage("TyreDamage" + tyreIndex++, tyreValue);
-//                            }
                             damageString += PrintIfDamage("drs faults", curCarStatus.m_drsFault);
                             damageString += PrintIfDamage("frontLeftWingDamage", curCarStatus.m_frontLeftWingDamage);
                             damageString += PrintIfDamage("frontRightWingDamage", curCarStatus.m_frontRightWingDamage);

@@ -1,8 +1,13 @@
 package com.f1updates;
 
 import java.nio.ByteBuffer;
+import java.text.DecimalFormat;
+import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.Vector;
+
+import static java.lang.Integer.max;
 
 class CarLapData {
 
@@ -181,7 +186,7 @@ class CarLapData {
 
     public String toString() {
         return "CarLapData { " +
-                    "TODO" +
+                "TODO" +
                 "}";
     }
 
@@ -190,6 +195,14 @@ class CarLapData {
 public class CarsLapData {
 
     Vector<CarLapData> carsLapData;
+   static Map<Integer, Integer> deltas;
+
+    public static final String ANSI_RESET = "\u001B[0m";
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_BLUE = "\u001B[34m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_GREEN = "\u001B[33m";
+
 
     public CarsLapData(Vector<CarLapData> carsLapData) {
         this.carsLapData = carsLapData;
@@ -228,6 +241,58 @@ public class CarsLapData {
         }
 
         return toPrint;
+    }
+
+    // Returns map of position -> string representaion of delta
+    public Map<Integer, String> CalculateDeltas(Integer lapLength) {
+
+        Map<Integer, CarLapData> internal = new TreeMap<>();
+
+        int maxPosition = 0;
+        for (CarLapData lapData : carsLapData) {
+            if (lapData.m_carPosition > 0) {
+                internal.put(lapData.m_carPosition, lapData);
+                maxPosition = max(lapData.m_carPosition, maxPosition);
+            }
+        }
+
+        Map<Integer, Integer> deltas = new TreeMap<>();
+        deltas.put(1, null);
+        for (int i = 2; i <= maxPosition; ++i) {
+            CarLapData previous = internal.get(i - 1);
+            CarLapData cur = internal.get(i);
+            deltas.put(i, Math.round(previous.m_totalDistance - cur.m_totalDistance));
+        }
+
+
+        Map<Integer, String> stringDeltas = new TreeMap<>();
+
+        stringDeltas.put(1, "--");
+
+        DecimalFormat lapFractionFormat = new DecimalFormat(" 000.00");
+        for (int i = 2; i <= maxPosition; ++i) {
+            String deltaStr = "";
+            if (this.deltas != null) {
+                Integer curDelta = deltas.get(i);
+                Integer lastDelta = this.deltas.get(i);
+                Integer deltaDelta = curDelta - lastDelta;
+                deltaStr = lapFractionFormat.format((float)(curDelta * 100) / lapLength) + "%(change:";
+                if (deltaDelta > 0) {
+                    deltaStr += ANSI_RED;
+                } else if (deltaDelta < 0) {
+                    deltaStr += ANSI_GREEN;
+                } else {
+                    deltaStr += ANSI_BLUE;
+                }
+                deltaStr += deltaDelta + ANSI_RESET + "M)";
+            }
+            stringDeltas.put(i, deltaStr);
+        }
+
+        this.deltas = deltas;
+
+        return stringDeltas;
+
     }
 
 }

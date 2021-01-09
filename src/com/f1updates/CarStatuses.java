@@ -151,7 +151,7 @@ class CarStatus {
             case 0:
                 return "lean";
             case 1:
-                return "standard";
+                return "stnd";
             case 2:
                 return "rich";
             case 3:
@@ -357,7 +357,7 @@ public class CarStatuses {
         for (int i = 0; i < 4; ++i) {
 
             if (0 == status.m_tyresWear[i]) {
-                estimations[i] = 999;
+                estimations[i] = 99;
                 continue;
             }
             int estimatedTotalDistance = (distanceTraveled * 100) / status.m_tyresWear[i];
