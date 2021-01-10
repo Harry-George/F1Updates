@@ -92,12 +92,14 @@ class Data {
 }
 
 class DriverInfo {
-    DriverInfo(Integer driverNumber, Integer driverIndex) {
-        this.driverNumber = driverNumber;
+    public DriverInfo(Integer driverCarNumber, Integer driverGameNumber, Integer driverIndex) {
+        this.driverCarNumber = driverCarNumber;
+        this.driverGameNumber = driverGameNumber;
         this.driverIndex = driverIndex;
     }
 
-    Integer driverNumber;
+    Integer driverCarNumber;
+    Integer driverGameNumber;
     Integer driverIndex;
 }
 
@@ -137,6 +139,30 @@ public class Main {
         return ret;
     }
 
+    public static String PrintDriverStatus(int value) {
+
+        switch (value) {
+            case 0:
+                return "IN GARAGE";
+            case 1:
+                return "FLYING LAP";
+            case 2:
+                return "IN LAP";
+            case 3:
+                return "OUT LAP";
+            case 4:
+                return "ON TRACK";
+        }
+
+        String ret = "";
+        if (value == 1) {
+            ret += ANSI_YELLOW + "'PITTING' " + ANSI_RESET;
+        } else if (value == 2) {
+            ret += ANSI_YELLOW + "'IN PITS' " + ANSI_RESET;
+        }
+        return ret;
+    }
+
     public static void main(String[] args) throws Exception {
         int port = args.length == 0 ? 20778 : Integer.parseInt(args[0]);
         // TODO - arg parsing
@@ -147,6 +173,8 @@ public class Main {
         // you can
         boolean playFileInRealTime = true;
         boolean showDriverId = false;
+
+        boolean printQualiStuff = true;
 
 
         Vector<DriverInfo> driversWeCareAbouts = new Vector<>();
@@ -161,8 +189,10 @@ public class Main {
         }
         Map<Integer, Highlight> driversToHighlight = new HashMap<Integer, Highlight>();
         // Note: If all drivers are being printed, is the driver index.
-        driversToHighlight.put(110, new Highlight("TMS", ANSI_BLUE));
-        driversToHighlight.put(112, new Highlight("ALX", "\u001b[38;5;90m"));
+        driversToHighlight.put(108, new Highlight("THOMAS", ANSI_BLUE));
+        driversToHighlight.put(111, new Highlight("XANDER", "\u001b[38;5;90m"));
+        driversToHighlight.put(112, new Highlight("JUSTIN", "\u001b[38;5;120m"));
+        driversToHighlight.put(110, new Highlight("BOBBY", "\u001b[38;5;112m"));
 
 //        driversWeCareAbouts.add(new DriverInfo(19, null));
 //        driversWeCareAbouts.add(new DriverInfo(71, null));
@@ -176,6 +206,7 @@ public class Main {
         long lastUpdateTime = Instant.now().getEpochSecond();
 
         DecimalFormat floatingPointFormat = new DecimalFormat("0.00");
+        DecimalFormat twoDigitFormat = new DecimalFormat("00");
 
         IReader reader;
 
@@ -227,7 +258,7 @@ public class Main {
                                 int len = participants.get().participants.size();
                                 for (int i = 0; i < len; ++i) {
                                     if (participants.get().participants.elementAt(i).m_raceNumber != 0) {
-                                        driversWeCareAbouts.add(new DriverInfo(participants.get().participants.elementAt(i).m_driverId, i));
+                                        driversWeCareAbouts.add(new DriverInfo(participants.get().participants.elementAt(i).m_raceNumber, participants.get().participants.elementAt(i).m_driverId, i));
                                     }
                                 }
                             } else {
@@ -235,7 +266,7 @@ public class Main {
                                 for (DriverInfo driver : driversWeCareAbouts) {
                                     int len = participants.get().participants.size();
                                     for (int i = 0; i < len; ++i) {
-                                        if (participants.get().participants.elementAt(i).m_raceNumber == driver.driverNumber) {
+                                        if (participants.get().participants.elementAt(i).m_raceNumber == driver.driverCarNumber) {
                                             driver.driverIndex = i;
                                         }
                                     }
@@ -301,20 +332,20 @@ public class Main {
 
                         string += "Pos:";
                         string += curCarLapData.m_carPosition;
-                        string += "\tCar:";
-                        if (driversToHighlight.containsKey(index.driverNumber)) {
-                            string += driversToHighlight.get(index.driverNumber).name;
+                        string += "\t";
+                        if (driversToHighlight.containsKey(index.driverGameNumber)) {
+                            string += driversToHighlight.get(index.driverGameNumber).name;
                         } else {
-                            string += index.driverNumber;
+                            string += "Car:" + index.driverCarNumber;
                         }
                         string += ANSI_RESET;
 
                         if (showDriverId) {
-                            string += " DriverID:" + index.driverNumber;
+                            string += " DriverID:" + index.driverGameNumber;
                         }
 
-                        if (driversToHighlight.containsKey(index.driverNumber)) {
-                            string += driversToHighlight.get(index.driverNumber).colour;
+                        if (driversToHighlight.containsKey(index.driverGameNumber)) {
+                            string += driversToHighlight.get(index.driverGameNumber).colour;
                         }
 
                         if (curCarLapData.m_resultStatus != 2) {
@@ -325,19 +356,38 @@ public class Main {
 
                         string += "\tTyres[";
                         string += "Compound:" + CarStatus.VisualCompoundToString(curCarStatus.m_visualTyreCompound);
+                        if (driversToHighlight.containsKey(index.driverGameNumber)) {
+                            string += driversToHighlight.get(index.driverGameNumber).colour;
+                        }
                         string += " Age:" + curCarStatus.m_tyresAgeLaps;
-                        string += " LapsLeft:";
-                        string += Arrays.toString(
-                                latestData.carStatuses.estimateLapsLeft(index.driverIndex,
-                                        (int) curCarLapData.m_lapDistance,
-                                        latestData.sessionData.m_trackLength));
+                        string += " LapsLeft:[";
+                        boolean comma = false;
+                        for (Integer value : latestData.carStatuses.estimateLapsLeft(index.driverIndex,
+                                (int) curCarLapData.m_lapDistance,
+                                latestData.sessionData.m_trackLength)) {
+                            if (comma) {
+                                string += ",";
+                            }
+                            if (value == 99) {
+                                string += "--";
+                            } else {
+                                string += twoDigitFormat.format(value);
+                            }
+                            comma = true;
+                        }
+
                         string += "]\tFuel[laps:";
                         string += floatingPointFormat.format(curCarStatus.m_fuelRemainingLaps);
                         string += " mix:";
                         string += CarStatus.FuelMixString(curCarStatus.m_fuelMix);
                         string += "]";
 
-                        if (deltas != null) {
+                        if (printQualiStuff) {
+                            string += "\t" + PrintDriverStatus(curCarLapData.m_driverStatus);
+                            if (curCarLapData.m_currentLapInvalid == 1) {
+                                string += ANSI_RED + "\tINVALIDATED" + ANSI_RESET;
+                            }
+                        } else if (deltas != null) {
                             string += "\tdistance:" + deltas.get(curCarLapData.m_carPosition);
                         }
 
@@ -362,7 +412,18 @@ public class Main {
 
                         string += ANSI_RESET;
 
-                        OutMap.put(curCarLapData.m_carPosition, string);
+                        if (printQualiStuff) {
+                            Integer value = Math.round(curCarLapData.m_lapDistance);
+                            if (value < 0) {
+                                value += latestData.sessionData.m_trackLength;
+                            }
+
+                            string += "\t" + value;
+                            OutMap.put(value, string);
+                        } else {
+                            OutMap.put(curCarLapData.m_carPosition, string);
+
+                        }
 
                     }
                     for (Map.Entry<Integer, String> pair : OutMap.entrySet()) {
