@@ -1,5 +1,7 @@
 package com.f1updates;
 
+import javafx.util.Pair;
+
 import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
 import java.util.Map;
@@ -258,6 +260,7 @@ public class CarsLapData {
 
         Map<Integer, Integer> deltas = new TreeMap<>();
         deltas.put(1, null);
+        deltas.put(1, Math.round((internal.get(maxPosition).m_totalDistance + lapLength) - internal.get(1).m_totalDistance));
         for (int i = 2; i <= maxPosition; ++i) {
             CarLapData previous = internal.get(i - 1);
             CarLapData cur = internal.get(i);
@@ -267,10 +270,10 @@ public class CarsLapData {
 
         Map<Integer, String> stringDeltas = new TreeMap<>();
 
-        stringDeltas.put(1, "--");
+//        stringDeltas.put(1, "--");
 
         DecimalFormat lapFractionFormat = new DecimalFormat(" 000.00");
-        for (int i = 2; i <= maxPosition; ++i) {
+        for (int i = 1; i <= maxPosition; ++i) {
             String deltaStr = "";
             if (this.deltas != null) {
                 Integer curDelta = deltas.get(i);

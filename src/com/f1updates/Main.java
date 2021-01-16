@@ -167,14 +167,15 @@ public class Main {
         int port = args.length == 0 ? 20778 : Integer.parseInt(args[0]);
         // TODO - arg parsing
         // If true read from file, false read from packets
-        boolean readFromFile = false;
+        boolean readFromFile = true;
         boolean showDeltas = true;
         // if true (and reading from file) play back packets as if simulating the session, otherwise play as fast as
         // you can
         boolean playFileInRealTime = true;
         boolean showDriverId = false;
 
-        boolean printQualiStuff = true;
+        boolean printQualiStuff = false;
+        boolean printInTrackPositionOrder = true;
 
 
         Vector<DriverInfo> driversWeCareAbouts = new Vector<>();
@@ -189,10 +190,10 @@ public class Main {
         }
         Map<Integer, Highlight> driversToHighlight = new HashMap<Integer, Highlight>();
         // Note: If all drivers are being printed, is the driver index.
-        driversToHighlight.put(108, new Highlight("THOMAS", ANSI_BLUE));
-        driversToHighlight.put(111, new Highlight("XANDER", "\u001b[38;5;90m"));
-        driversToHighlight.put(112, new Highlight("JUSTIN", "\u001b[38;5;120m"));
-        driversToHighlight.put(110, new Highlight("BOBBY", "\u001b[38;5;112m"));
+        driversToHighlight.put(113, new Highlight("THOMAS", ANSI_BLUE));
+        driversToHighlight.put(106, new Highlight("XANDER", "\u001b[38;5;90m"));
+        driversToHighlight.put(111, new Highlight("JUSTIN", "\u001b[38;5;120m"));
+        driversToHighlight.put(104, new Highlight("BOBBY", "\u001b[38;5;112m"));
 
 //        driversWeCareAbouts.add(new DriverInfo(19, null));
 //        driversWeCareAbouts.add(new DriverInfo(71, null));
@@ -314,6 +315,17 @@ public class Main {
                         deltas = latestData.carsLapData.CalculateDeltas(latestData.sessionData.m_trackLength);
                     }
 
+                    Integer P1TrackPosition = null;
+                    for (CarLapData lapData : latestData.carsLapData.carsLapData) {
+                        if (lapData.m_carPosition == 1) {
+                            P1TrackPosition = Math.round(lapData.m_lapDistance);
+                            if (P1TrackPosition < 0) {
+                                P1TrackPosition += latestData.sessionData.m_trackLength;
+                            }
+//                            System.out.println("P1:" + P1TrackPosition);
+                        }
+                    }
+
                     for (DriverInfo index : driversWeCareAbouts) {
                         if (index.driverIndex == null) {
                             System.out.println(latestData.participants.participants);
@@ -412,14 +424,20 @@ public class Main {
 
                         string += ANSI_RESET;
 
-                        if (printQualiStuff) {
-                            Integer value = Math.round(curCarLapData.m_lapDistance);
-                            if (value < 0) {
-                                value += latestData.sessionData.m_trackLength;
+                        if (printInTrackPositionOrder) {
+                            Integer value = Math.round(curCarLapData.m_lapDistance)
+                            // We add on a lap distance as
+                            // * The value can be negative
+                            // * We want to be able to subtract a lap length
+                                    + (latestData.sessionData.m_trackLength * 2);
+
+                            // Only do this if quali stuff as we don't want it completly re-ordering during quali
+                            if (! printQualiStuff && value > P1TrackPosition) {
+                                value -= latestData.sessionData.m_trackLength;
                             }
 
-                            string += "\t" + value;
-                            OutMap.put(value, string);
+//                            string += "\t" + value;
+                            OutMap.put(value * -1, string);
                         } else {
                             OutMap.put(curCarLapData.m_carPosition, string);
 
