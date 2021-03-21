@@ -164,18 +164,18 @@ public class Main {
     }
 
     public static void main(String[] args) throws Exception {
-        int port = args.length == 0 ? 20778 : Integer.parseInt(args[0]);
+        int port = args.length == 0 ? 20777 : Integer.parseInt(args[0]);
         // TODO - arg parsing
         // If true read from file, false read from packets
-        boolean readFromFile = true;
+        boolean readFromFile = false;
         boolean showDeltas = true;
         // if true (and reading from file) play back packets as if simulating the session, otherwise play as fast as
         // you can
         boolean playFileInRealTime = true;
-        boolean showDriverId = false;
+        boolean showDriverId = true;
 
         boolean printQualiStuff = false;
-        boolean printInTrackPositionOrder = true;
+        boolean printInTrackPositionOrder = false0000000;
 
 
         Vector<DriverInfo> driversWeCareAbouts = new Vector<>();
@@ -190,10 +190,10 @@ public class Main {
         }
         Map<Integer, Highlight> driversToHighlight = new HashMap<Integer, Highlight>();
         // Note: If all drivers are being printed, is the driver index.
-        driversToHighlight.put(113, new Highlight("THOMAS", ANSI_BLUE));
-        driversToHighlight.put(106, new Highlight("XANDER", "\u001b[38;5;90m"));
-        driversToHighlight.put(111, new Highlight("JUSTIN", "\u001b[38;5;120m"));
-        driversToHighlight.put(104, new Highlight("BOBBY", "\u001b[38;5;112m"));
+        driversToHighlight.put(111, new Highlight("THOMAS", ANSI_BLUE));
+        driversToHighlight.put(109, new Highlight("XANDER", "\u001b[38;5;90m"));
+        driversToHighlight.put(105, new Highlight("BOBBY", "\u001b[38;5;112m"));
+//        driversToHighlight.put(104, new Highlight("JUSTIN", "\u001b[38;5;120m"));
 
 //        driversWeCareAbouts.add(new DriverInfo(19, null));
 //        driversWeCareAbouts.add(new DriverInfo(71, null));
@@ -367,7 +367,7 @@ public class Main {
                         }
 
                         string += "\tTyres[";
-                        string += "Compound:" + CarStatus.VisualCompoundToString(curCarStatus.m_visualTyreCompound);
+                        string += "" + CarStatus.VisualCompoundToString(curCarStatus.m_visualTyreCompound);
                         if (driversToHighlight.containsKey(index.driverGameNumber)) {
                             string += driversToHighlight.get(index.driverGameNumber).colour;
                         }
@@ -388,19 +388,18 @@ public class Main {
                             comma = true;
                         }
 
-                        string += "]\tFuel[laps:";
-                        string += floatingPointFormat.format(curCarStatus.m_fuelRemainingLaps);
-                        string += " mix:";
+                        string += "]\tFuel[";
                         string += CarStatus.FuelMixString(curCarStatus.m_fuelMix);
+                        string += " laps:";
+                        string += floatingPointFormat.format(curCarStatus.m_fuelRemainingLaps);
                         string += "]";
 
+                        string += "\tdistance:" + deltas.get(curCarLapData.m_carPosition);
                         if (printQualiStuff) {
                             string += "\t" + PrintDriverStatus(curCarLapData.m_driverStatus);
                             if (curCarLapData.m_currentLapInvalid == 1) {
                                 string += ANSI_RED + "\tINVALIDATED" + ANSI_RESET;
                             }
-                        } else if (deltas != null) {
-                            string += "\tdistance:" + deltas.get(curCarLapData.m_carPosition);
                         }
 
                         if (curCarLapData.m_penalties > 0) {
@@ -425,14 +424,14 @@ public class Main {
                         string += ANSI_RESET;
 
                         if (printInTrackPositionOrder) {
-                            Integer value = Math.round(curCarLapData.m_lapDistance)
+                            int value = Math.round(curCarLapData.m_lapDistance)
                             // We add on a lap distance as
                             // * The value can be negative
                             // * We want to be able to subtract a lap length
                                     + (latestData.sessionData.m_trackLength * 2);
 
                             // Only do this if quali stuff as we don't want it completly re-ordering during quali
-                            if (! printQualiStuff && value > P1TrackPosition) {
+                            if (! printQualiStuff && value > P1TrackPosition + (latestData.sessionData.m_trackLength * 2)) {
                                 value -= latestData.sessionData.m_trackLength;
                             }
 
